@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Timecard Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #fafafa;
+            color: #2d3748;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .user-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 6px;
+            font-size: 0.875rem;
+        }
+
+        .input-group input {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+        }
+
+        .timecard-table {
+            margin-bottom: 32px;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f7fafc;
+            color: #4a5568;
+            padding: 16px 12px;
+            font-weight: 500;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .day-cell {
+            font-weight: 500;
+            color: #2d3748;
+            min-width: 80px;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.1);
+        }
+
+        .total-hours {
+            font-weight: 500;
+            color: #059669;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #f7fafc;
+            border-color: #a0aec0;
+        }
+
+        .btn-primary {
+            background: #3182ce;
+            color: white;
+            border-color: #3182ce;
+        }
+
+        .btn-primary:hover {
+            background: #2c5aa0;
+            border-color: #2c5aa0;
+        }
+
+        .btn-coffee {
+            background: #ed8936;
+            color: white;
+            border-color: #ed8936;
+        }
+
+        .btn-coffee:hover {
+            background: #dd6b20;
+            border-color: #dd6b20;
+        }
+
+        .summary {
+            background: #f0fff4;
+            padding: 24px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 32px;
+            border: 1px solid #9ae6b4;
+        }
+
+        .summary h3 {
+            color: #2f855a;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .weekly-total {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2f855a;
+            margin: 8px 0;
+        }
+
+        .summary p {
+            color: #68d391;
+            font-size: 0.875rem;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+
+        .chart-container h3 {
+            text-align: center;
+            margin-bottom: 16px;
+            color: #4a5568;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #feb2b2;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #9ae6b4;
+            display: none;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .user-info {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .actions {
+                justify-content: center;
+            }
+
+            .btn {
+                min-width: auto;
+                flex: 1;
+                max-width: 120px;
+                font-size: 0.8rem;
+                padding: 8px 12px;
+            }
+
+            .timecard-table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+
+            .weekly-total {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .container {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            
+            .actions, .chart-container {
+                display: none;
+            }
+        }
+
+        /* Subtle animations */
+        .btn, .time-input, .input-group input {
+            transition: all 0.15s ease;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        /* Clean scrollbar */
+        .timecard-table::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .timecard-table::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .timecard-table::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .timecard-table::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Weekly Timecard</h1>
+            <p>Simple time tracking for your work week</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="user-info">
+            <div class="input-group">
+                <label for="userName">Employee Name</label>
+                <input type="text" id="userName" placeholder="Enter your name">
+            </div>
+            <div class="input-group">
+                <label for="reportDate">Week Starting</label>
+                <input type="date" id="reportDate">
+            </div>
+        </div>
+
+        <div class="timecard-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Start</th>
+                        <th>Break Start</th>
+                        <th>Break End</th>
+                        <th>End</th>
+                        <th>Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="day-cell">Monday</td>
+                        <td><input type="time" class="time-input" data-day="monday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="monday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="monday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="monday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="monday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Tuesday</td>
+                        <td><input type="time" class="time-input" data-day="tuesday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="tuesday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="tuesday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="tuesday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="tuesday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Wednesday</td>
+                        <td><input type="time" class="time-input" data-day="wednesday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="wednesday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="wednesday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="wednesday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="wednesday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Thursday</td>
+                        <td><input type="time" class="time-input" data-day="thursday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="thursday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="thursday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="thursday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="thursday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Friday</td>
+                        <td><input type="time" class="time-input" data-day="friday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="friday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="friday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="friday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="friday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Saturday</td>
+                        <td><input type="time" class="time-input" data-day="saturday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="saturday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="saturday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="saturday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="saturday">0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="day-cell">Sunday</td>
+                        <td><input type="time" class="time-input" data-day="sunday" data-field="timeIn"></td>
+                        <td><input type="time" class="time-input" data-day="sunday" data-field="breakStart"></td>
+                        <td><input type="time" class="time-input" data-day="sunday" data-field="breakEnd"></td>
+                        <td><input type="time" class="time-input" data-day="sunday" data-field="timeOut"></td>
+                        <td class="total-hours" data-day="sunday">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="calculateHours()">📊 Calculate</button>
+            <button class="btn" onclick="printTimecard()">🖨️ Print</button>
+            <button class="btn" onclick="exportPDF()">📄 PDF</button>
+            <button class="btn" onclick="emailTimecard()">📧 Email</button>
+            <button class="btn" onclick="clearAll()">🗑️ Clear</button>
+            <a href="https://buymeacoffee.com" target="_blank" class="btn btn-coffee">☕ Coffee</a>
+        </div>
+
+        <div class="summary">
+            <h3>Total Hours</h3>
+            <div class="weekly-total" id="weeklyTotal">0.00</div>
+            <p>hours this week</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let hoursChart;
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            loadSavedData();
+            setDefaultDate();
+            addEventListeners();
+        });
+
+        function setDefaultDate() {
+            const today = new Date();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - today.getDay() + 1);
+            document.getElementById('reportDate').value = monday.toISOString().split('T')[0];
+        }
+
+        function addEventListeners() {
+            // Add real-time calculation on input change
+            document.querySelectorAll('.time-input').forEach(input => {
+                input.addEventListener('change', saveData);
+                input.addEventListener('blur', calculateHours);
+            });
+
+            document.getElementById('userName').addEventListener('input', saveData);
+            document.getElementById('reportDate').addEventListener('change', saveData);
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('hoursChart').getContext('2d');
+            hoursChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Hours Worked',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(49, 130, 206, 0.8)',
+                        borderColor: 'rgba(49, 130, 206, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 12,
+                            ticks: {
+                                stepSize: 2,
+                                color: '#718096'
+                            },
+                            grid: {
+                                color: 'rgba(226, 232, 240, 0.8)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#718096'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    animation: {
+                        duration: 800,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        function timeToMinutes(time) {
+            if (!time) return 0;
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function minutesToHours(minutes) {
+            return (minutes / 60).toFixed(2);
+        }
+
+        function calculateDayHours(day) {
+            const timeIn = document.querySelector(`[data-day="${day}"][data-field="timeIn"]`).value;
+            const breakStart = document.querySelector(`[data-day="${day}"][data-field="breakStart"]`).value;
+            const breakEnd = document.querySelector(`[data-day="${day}"][data-field="breakEnd"]`).value;
+            const timeOut = document.querySelector(`[data-day="${day}"][data-field="timeOut"]`).value;
+
+            if (!timeIn || !timeOut) return 0;
+
+            const startMinutes = timeToMinutes(timeIn);
+            const endMinutes = timeToMinutes(timeOut);
+            
+            if (endMinutes <= startMinutes) return 0;
+
+            let totalMinutes = endMinutes - startMinutes;
+
+            // Subtract break time if both break times are provided
+            if (breakStart && breakEnd) {
+                const breakStartMinutes = timeToMinutes(breakStart);
+                const breakEndMinutes = timeToMinutes(breakEnd);
+                
+                if (breakEndMinutes > breakStartMinutes) {
+                    const breakDuration = breakEndMinutes - breakStartMinutes;
+                    totalMinutes -= breakDuration;
+                }
+            }
+
+            return Math.max(0, totalMinutes);
+        }
+
+        function calculateHours() {
+            const dailyHours = [];
+            let weeklyTotal = 0;
+
+            days.forEach(day => {
+                const dayMinutes = calculateDayHours(day);
+                const dayHours = parseFloat(minutesToHours(dayMinutes));
+                
+                dailyHours.push(dayHours);
+                weeklyTotal += dayHours;
+                
+                document.querySelector(`[data-day="${day}"].total-hours`).textContent = dayHours.toFixed(2);
+            });
+
+            document.getElementById('weeklyTotal').textContent = weeklyTotal.toFixed(2);
+            
+            // Update chart
+            hoursChart.data.datasets[0].data = dailyHours;
+            hoursChart.update();
+
+            saveData();
+            showMessage('Hours calculated successfully!', 'success');
+        }
+
+        function validateInputs() {
+            const userName = document.getElementById('userName').value.trim();
+            const reportDate = document.getElementById('reportDate').value;
+            
+            if (!userName) {
+                showMessage('Please enter your name.', 'error');
+                return false;
+            }
+            
+            if (!reportDate) {
+                showMessage('Please select a date.', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        function showMessage(message, type) {
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            
+            // Hide both messages first
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+            
+            if (type === 'error') {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            } else {
+                successEl.textContent = message;
+                successEl.style.display = 'block';
+            }
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+                successEl.style.display = 'none';
+            }, 3000);
+        }
+
+        function printTimecard() {
+            if (!validateInputs()) return;
+            window.print();
+        }
+
+        function exportPDF() {
+            if (!validateInputs()) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const userName = document.getElementById('userName').value;
+            const reportDate = document.getElementById('reportDate').value;
+            const weeklyTotal = document.getElementById('weeklyTotal').textContent;
+            
+            // Header
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('Weekly Timecard', 20, 30);
+            
+            // User info
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Employee: ${userName}`, 20, 50);
+            doc.text(`Week Starting: ${new Date(reportDate).toLocaleDateString()}`, 20, 60);
+            doc.text(`Total Hours: ${weeklyTotal}`, 20, 70);
+            
+            // Table headers
+            doc.setFont(undefined, 'bold');
+            let y = 90;
+            doc.text('Day', 20, y);
+            doc.text('Start', 50, y);
+            doc.text('Break Start', 80, y);
+            doc.text('Break End', 110, y);
+            doc.text('End', 140, y);
+            doc.text('Hours', 170, y);
+            
+            // Draw line under headers
+            doc.line(20, y + 3, 190, y + 3);
+            
+            // Table data
+            doc.setFont(undefined, 'normal');
+            days.forEach((day, index) => {
+                y += 12;
+                const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+                const timeIn = document.querySelector(`[data-day="${day}"][data-field="timeIn"]`).value || '-';
+                const breakStart = document.querySelector(`[data-day="${day}"][data-field="breakStart"]`).value || '-';
+                const breakEnd = document.querySelector(`[data-day="${day}"][data-field="breakEnd"]`).value || '-';
+                const timeOut = document.querySelector(`[data-day="${day}"][data-field="timeOut"]`).value || '-';
+                const totalHours = document.querySelector(`[data-day="${day}"].total-hours`).textContent;
+                
+                doc.text(dayName, 20, y);
+                doc.text(timeIn, 50, y);
+                doc.text(breakStart, 80, y);
+                doc.text(breakEnd, 110, y);
+                doc.text(timeOut, 140, y);
+                doc.text(totalHours, 170, y);
+            });
+            
+            doc.save(`timecard_${userName.replace(/\s+/g, '_')}_${reportDate}.pdf`);
+            showMessage('PDF exported successfully!', 'success');
+        }
+
+        function emailTimecard() {
+            if (!validateInputs()) return;
+
+            const userName = document.getElementById('userName').value;
+            const reportDate = document.getElementById('reportDate').value;
+            const weeklyTotal = document.getElementById('weeklyTotal').textContent;
+            
+            const subject = `Weekly Timecard - ${userName} - Week of ${new Date(reportDate).toLocaleDateString()}`;
+            const body = `Weekly Timecard Summary
+
+Employee: ${userName}
+Week Starting: ${new Date(reportDate).toLocaleDateString()}
+Total Hours: ${weeklyTotal}
+
+Daily Breakdown:
+${days.map(day => {
+    const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+    const timeIn = document.querySelector(`[data-day="${day}"][data-field="timeIn"]`).value || '-';
+    const timeOut = document.querySelector(`[data-day="${day}"][data-field="timeOut"]`).value || '-';
+    const totalHours = document.querySelector(`[data-day="${day}"].total-hours`).textContent;
+    return `${dayName}: ${timeIn} - ${timeOut} (${totalHours} hours)`;
+}).join('\n')}
+
+Best regards,
+${userName}`;
+
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+        function clearAll() {
+            if (confirm('Clear all data? This cannot be undone.')) {
+                document.getElementById('userName').value = '';
+                document.getElementById('reportDate').value = '';
+                
+                document.querySelectorAll('.time-input').forEach(input => {
+                    input.value = '';
+                });
+                
+                document.querySelectorAll('.total-hours').forEach(cell => {
+                    cell.textContent = '0.00';
+                });
+                
+                document.getElementById('weeklyTotal').textContent = '0.00';
+                
+                // Reset chart
+                hoursChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0];
+                hoursChart.update();
+                
+                clearSavedData();
+                setDefaultDate();
+                showMessage('Data cleared successfully!', 'success');
+            }
+        }
+
+        function saveData() {
+            const data = {
+                userName: document.getElementById('userName').value,
+                reportDate: document.getElementById('reportDate').value,
+                timeData: {}
+            };
+            
+            days.forEach(day => {
+                data.timeData[day] = {
+                    timeIn: document.querySelector(`[data-day="${day}"][data-field="timeIn"]`).value,
+                    breakStart: document.querySelector(`[data-day="${day}"][data-field="breakStart"]`).value,
+                    breakEnd: document.querySelector(`[data-day="${day}"][data-field="breakEnd"]`).value,
+                    timeOut: document.querySelector(`[data-day="${day}"][data-field="timeOut"]`).value
+                };
+            });
+            
+            const timecardData = JSON.stringify(data);
+            window.savedTimecardData = timecardData;
+        }
+
+        function loadSavedData() {
+            try {
+                const saved = window.savedTimecardData;
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    
+                    document.getElementById('userName').value = data.userName || '';
+                    document.getElementById('reportDate').value = data.reportDate || '';
+                    
+                    if (data.timeData) {
+                        days.forEach(day => {
+                            if (data.timeData[day]) {
+                                const dayData = data.timeData[day];
+                                document.querySelector(`[data-day="${day}"][data-field="timeIn"]`).value = dayData.timeIn || '';
+                                document.querySelector(`[data-day="${day}"][data-field="breakStart"]`).value = dayData.breakStart || '';
+                                document.querySelector(`[data-day="${day}"][data-field="breakEnd"]`).value = dayData.breakEnd || '';
+                                document.querySelector(`[data-day="${day}"][data-field="timeOut"]`).value = dayData.timeOut || '';
+                            }
+                        });
+                        calculateHours();
+                    }
+                }
+            } catch (error) {
+                console.log('No saved data found');
+            }
+        }
+
+        function clearSavedData() {
+            window.savedTimecardData = null;
+        }
+    </script>
+</body>
+</html>
